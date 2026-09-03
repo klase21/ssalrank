@@ -31,6 +31,28 @@ export default function AdminPage() {
     } catch(e){ alert("번역 실패: "+e)} finally { setTranslating(null)}
   }
 
+function AddSourceBox(){
+  const [name,setName]=useState(""); const [url,setUrl]=useState(""); const [msg,setMsg]=useState<string|null>(null); const [saving,setSaving]=useState(false);
+  return (
+    <div className="mt-3 grid gap-2">
+      <div className="flex gap-2">
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="이름 (예: 신규_캐시닥)" className="flex-1 rounded-xl border px-3 py-2 text-xs dark:bg-zinc-800 dark:border-zinc-700" />
+        <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="RSS URL https://..." className="flex-[2] rounded-xl border px-3 py-2 text-xs dark:bg-zinc-800 dark:border-zinc-700" />
+      </div>
+      <button disabled={saving||!name||!url} onClick={async()=>{
+        setSaving(true); setMsg(null);
+        try{
+          const r=await fetch("/api/sources",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,url})});
+          const d=await r.json();
+          if(!r.ok) setMsg("실패: "+(d.error||r.statusText)); else { setMsg("추가됨: "+d.source.name); setName(""); setUrl(""); }
+        }catch(e:any){ setMsg("에러: "+e.message)} finally{ setSaving(false)}
+      }} className="rounded-full bg-zinc-900 py-2 text-xs font-bold text-white disabled:opacity-50 dark:bg-white dark:text-black">{saving?"추가 중...":"소스 추가 — 내일부터 크론이 매일 긁는다"}</button>
+      {msg && <div className="rounded-xl bg-zinc-100 p-2 text-xs dark:bg-zinc-800">{msg}</div>}
+      <p className="text-xs text-zinc-400">매일 새로운 곳 소싱: 여기서 추가하면 코드 배포 없이 다음날부터 자동. 예: `r/beermoney` 외에 `https://www.reddit.com/r/mturk/new/.rss` 같은 해외/국내 아무 RSS.</p>
+    </div>
+  );
+}
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <header className="border-b bg-white dark:bg-zinc-950 dark:border-zinc-800">
@@ -80,6 +102,19 @@ export default function AdminPage() {
             <button onClick={()=>alert(JSON.stringify(form,null,2))} className="rounded-full border py-2 text-sm dark:border-zinc-700">JSON 미리보기 (로컬)</button>
             <p className="text-xs text-zinc-400">ENV 없으면 Mock 모드로 동작, ENV 넣으면 Supabase에 저장되어 메인에 즉시 반영됩니다.</p>
           </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white p-6 dark:bg-zinc-900">
+          <h2 className="font-bold">📱 쌀먹 앱 리뷰 (안드로이드 대비)</h2>
+          <p className="mt-1 text-xs text-zinc-500">앱 리뷰는 `/apps`에서 노출, SEO 유입 + 레퍼럴 전환 핵심. 지금 Supabase `app_reviews`에 시드 2개 있음.</p>
+          <a href="/apps" className="mt-2 inline-block rounded-full border px-4 py-1.5 text-xs font-medium">앱 리뷰 페이지 보기 →</a>
+          <p className="mt-2 text-xs text-zinc-400">추가: Supabase → Table Editor → app_reviews → Insert row, 또는 <code>POST /api/apps</code></p>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white p-6 dark:bg-zinc-900">
+          <h2 className="font-bold">🌱 매일 새로운 소스 소싱</h2>
+          <p className="mt-1 text-xs text-zinc-500">매일 새로운 RSS/사이트를 추가하면 콘텐츠가 무한히 늘어난다. `sources` 테이블에 넣으면 다음 크론부터 자동 순회.</p>
+          <AddSourceBox />
         </div>
 
         <div className="mt-6 rounded-2xl bg-white p-6 dark:bg-zinc-900">

@@ -46,8 +46,11 @@ export function parseRss(xml: string, source: string): RawItem[] {
 export const FEEDS: { source: string; url: string }[] = [
   { source: "r/beermoney", url: "https://www.reddit.com/r/beermoney/new/.rss" },
   { source: "r/SideHustle", url: "https://www.reddit.com/r/SideHustle/new/.rss" },
-  // KR: 뽐뿌/클리앙은 RSS가 불안정해서 MVP에서는 reddit 2개만, 확장은 아래 추가
-  // { source: "ppomppu", url: "https://www.ppomppu.co.kr/rss.php?forum=event" },
+  { source: "r/PaidSurveys", url: "https://www.reddit.com/r/PaidSurveys/new/.rss" },
+  { source: "r/swagbucks", url: "https://www.reddit.com/r/Swagbucks/new/.rss" },
+  // KR — 공개 RSS만, 막히면 스킵 (무자본)
+  { source: "ppomppu_event", url: "https://www.ppomppu.co.kr/rss.php?id=event" },
+  { source: "ppomppu_p4", url: "https://www.ppomppu.co.kr/rss.php?id=free4" },
 ];
 
 export async function fetchFeed(url: string, source: string): Promise<RawItem[]> {

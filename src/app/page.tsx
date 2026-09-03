@@ -76,6 +76,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-3">
             <LangToggle lang={lang} setLang={setLang} />
+            <a href="/apps" className="text-xs font-medium text-zinc-600 hover:underline">앱 리뷰</a>
             <a href="/admin" className="hidden sm:block text-xs text-zinc-500 hover:underline">{t.admin} →</a>
           </div>
         </div>

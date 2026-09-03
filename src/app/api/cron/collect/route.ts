@@ -42,13 +42,23 @@ async function handle(req: NextRequest) {
 
   const supabase = getSupabase();
 
-  // 1) 수집
+  // 1) 수집 — 코드 FEEDS + DB sources(매일 새로운 곳) 합치기
   const all: RawItem[] = [];
   const errors: string[] = [];
-  for (const f of FEEDS) {
+  let feeds = [...FEEDS];
+  if (supabase) {
+    try {
+      const { data: dbSources } = await supabase.from("sources").select("name, url").eq("enabled", true);
+      if (dbSources) {
+        const existingUrls = new Set(feeds.map(f=>f.url));
+        for (const s of dbSources as any[]) if (!existingUrls.has(s.url)) feeds.push({ source: s.name, url: s.url });
+      }
+    } catch {}
+  }
+  for (const f of feeds) {
     try {
       const items = await fetchFeed(f.url, f.source);
-      all.push(...items.slice(0, limit));
+      all.push(...items.slice(0, Math.ceil(limit / Math.max(1, feeds.length)) + 1));
     } catch (e:any) {
       errors.push(`${f.source}: ${e.message}`);
     }
