@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { posts } from "@/data/posts";
 
@@ -8,7 +8,9 @@ export default function AdminPage() {
   const [translating, setTranslating] = useState<"ko->en" | "en->ko" | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [stats, setStats] = useState<any[]>([]);
   const hourly = Math.round((Number(form.reward_krw)||0) / (Number(form.time)||1) * 60);
+  useEffect(()=>{ fetch("/api/click").then(r=>r.json()).then(d=>setStats(d.stats||[])).catch(()=>{}); },[saveMsg]);
 
   async function handleTranslate(dir: "ko->en" | "en->ko") {
     setTranslating(dir);
@@ -79,6 +81,17 @@ export default function AdminPage() {
         </div>
 
         <div className="mt-6 rounded-2xl bg-white p-6 dark:bg-zinc-900">
+          <h2 className="font-bold">📊 클릭 대시보드 (레퍼럴 우선순위)</h2>
+          <p className="mt-1 text-xs text-zinc-500">레퍼럴 클릭이 많은 글이 돈 되는 글. 이걸 상위에 유지하고 비슷한 걸 더 찾아라.</p>
+          {stats.length===0 ? <p className="mt-3 text-sm text-zinc-400">아직 클릭 없음 — Supabase에 <code>supabase_clicks.sql</code> 실행 후 클릭하면 집계됨</p> :
+          <table className="mt-3 w-full text-xs">
+            <thead><tr className="border-b text-left text-zinc-500"><th className="py-2">제목</th><th>레퍼럴</th><th>일반</th><th>합계</th></tr></thead>
+            <tbody>{stats.map((s:any)=><tr key={s.id} className="border-b dark:border-zinc-800"><td className="py-2 pr-2">{s.title_ko?.slice(0,22)}</td><td className="font-bold text-yellow-600">{s.referral_clicks}</td><td>{s.source_clicks}</td><td>{s.total_clicks}</td></tr>)}</tbody>
+          </table>}
+          <button onClick={()=>fetch("/api/click").then(r=>r.json()).then(d=>setStats(d.stats||[]))} className="mt-3 rounded-full border px-3 py-1 text-xs">새로고침</button>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white p-6 dark:bg-zinc-900">
           <h2 className="font-bold">현재 Mock 데이터 ({posts.length}개)</h2>
           <ul className="mt-2 list-disc pl-5 text-sm text-zinc-600 dark:text-zinc-400">
             {posts.map(p=> <li key={p.id}>{p.title_ko} - {p.reward_krw}원 / {p.time_minutes}분</li>)}
@@ -86,15 +99,16 @@ export default function AdminPage() {
         </div>
 
         <div className="mt-6 rounded-2xl border border-dashed p-5 text-sm">
-          <h3 className="font-bold">Supabase 설정 (1분)</h3>
+          <h3 className="font-bold">Supabase 추가 설정 (클릭 추적)</h3>
+          <p className="mt-1 text-xs text-zinc-500">SQL Editor에 <code>supabase_clicks.sql</code> 붙여넣기 → Run 하면 클릭 집계 시작. 안 해도 글쓰기는 되지만 통계가 안 뜬다.</p>
+          <h3 className="mt-4 font-bold">Supabase 설정 (1분)</h3>
           <ol className="mt-2 list-decimal pl-5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-            <li>supabase.com 무료 프로젝트 생성</li>
-            <li>SQL Editor에 <code>supabase.sql</code> 파일 내용 붙여넣기 → Run</li>
-            <li>Project Settings → API → URL / anon key 복사 → <code>.env.local</code>에 붙이기 ( <code>.env.example</code> 참조)</li>
-            <li><code>npm run dev</code> 재시작 → 어드민에서 저장 → 메인에 LIVE DB 배지 확인</li>
+            <li>SQL Editor에 <code>supabase.sql</code> → Run (이미 했으면 스킵)</li>
+            <li>SQL Editor에 <code>supabase_clicks.sql</code> → Run</li>
+            <li>Vercel Settings → Environment Variables에 키 2개 넣고 Redeploy</li>
           </ol>
-          <pre className="mt-2 overflow-auto rounded bg-zinc-900 p-3 text-xs text-green-400">{`-- supabase.sql 파일 참조
-create table posts (...)`}</pre>
+          <pre className="mt-2 overflow-auto rounded bg-zinc-900 p-3 text-xs text-green-400">{`-- supabase_clicks.sql
+create table clicks (...)`}</pre>
         </div>
       </main>
     </div>
