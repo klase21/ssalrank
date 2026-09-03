@@ -72,6 +72,22 @@ If the clicks table is not created, writes are mocked and the dashboard shows em
 - `.env.local` and `.env*.local` are gitignored; Vercel env must be set separately (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
 - Deployment Protection should be `Disabled` for public access (Vercel → Settings → Deployment Protection)
 
+## Screenshots
+
+The committed screenshots are captured from the live Vercel deployment with `playwright` (`scripts/capture.mjs`) and block no external requests beyond the app itself.
+
+![Ranking - hourly wage, filters, LIVE DB badge](docs/images/ranking-desktop.png)
+
+![Detail - reward/time/hourly, 3 steps, referral/source with click tracking](docs/images/detail-desktop.png)
+
+![Admin - write, free Google Translate, hourly preview, click dashboard](docs/images/admin-desktop.png)
+
+![Ranking - mobile](docs/images/ranking-mobile.png)
+
+![Detail - mobile](docs/images/detail-mobile.png)
+
+See `scripts/capture.mjs:1` for the capture process (`CAPTURE_URL` env overrides the default Vercel URL).
+
 ## Architecture
 
 - Next.js 16 App Router + React 19 + TypeScript + Tailwind CSS
