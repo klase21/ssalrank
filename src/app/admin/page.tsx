@@ -9,6 +9,8 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [stats, setStats] = useState<any[]>([]);
+  const [collecting, setCollecting] = useState(false);
+  const [collectMsg, setCollectMsg] = useState<string|null>(null);
   const hourly = Math.round((Number(form.reward_krw)||0) / (Number(form.time)||1) * 60);
   useEffect(()=>{ fetch("/api/click").then(r=>r.json()).then(d=>setStats(d.stats||[])).catch(()=>{}); },[saveMsg]);
 
@@ -78,6 +80,31 @@ export default function AdminPage() {
             <button onClick={()=>alert(JSON.stringify(form,null,2))} className="rounded-full border py-2 text-sm dark:border-zinc-700">JSON 미리보기 (로컬)</button>
             <p className="text-xs text-zinc-400">ENV 없으면 Mock 모드로 동작, ENV 넣으면 Supabase에 저장되어 메인에 즉시 반영됩니다.</p>
           </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl bg-white p-6 dark:bg-zinc-900">
+          <h2 className="font-bold">🤖 자동 수집 (r/beermoney 크롤 - 무료)</h2>
+          <p className="mt-1 text-xs text-zinc-500">매일 09:00(KST) Vercel Cron이 `r/beermoney`+`r/SideHustle` RSS를 긁어 번역해서 미검증으로 적재. 중복은 자동 제외. 수동으로도 돌릴 수 있다.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button onClick={async()=>{
+              setCollecting(true); setCollectMsg(null);
+              try{
+                const r = await fetch("/api/cron/collect?limit=5&dry=1"); const d=await r.json();
+                setCollectMsg(`[DRY] fetched:${d.fetched} unique:${d.unique} preview:${d.preview?.length||0} errors:${(d.errors||[]).join(",")||"none"}\n` + (d.preview||[]).slice(0,2).map((p:any)=>`- ${p.title_ko.slice(0,40)} | ${p.source_url}`).join("\n"));
+              }catch(e:any){ setCollectMsg("실패: "+e.message)} finally{ setCollecting(false)}
+            }} disabled={collecting} className="rounded-full border px-4 py-2 text-xs font-medium disabled:opacity-50">미리보기 (dry-run)</button>
+            <button onClick={async()=>{
+              if(!confirm("실제로 Supabase에 미검증 글 5개 적재할까? (중복 제외, 번역 포함)")) return;
+              setCollecting(true); setCollectMsg(null);
+              try{
+                const r = await fetch("/api/cron/collect?limit=5",{method:"POST"}); const d=await r.json();
+                if(!r.ok) setCollectMsg("실패: "+(d.error||JSON.stringify(d)));
+                else setCollectMsg(`완료: inserted ${d.inserted} / fetched ${d.fetched}\n` + (d.data||[]).map((x:any)=>`- ${x.title_ko.slice(0,30)}`).join("\n"));
+              }catch(e:any){ setCollectMsg("실패: "+e.message)} finally{ setCollecting(false)}
+            }} disabled={collecting} className="rounded-full bg-black px-4 py-2 text-xs font-bold text-white disabled:opacity-50 dark:bg-white dark:text-black">{collecting?"수집 중...":"지금 수집해서 DB에 넣기"}</button>
+          </div>
+          {collectMsg && <pre className="mt-3 overflow-auto rounded-xl bg-zinc-100 p-3 text-xs leading-relaxed dark:bg-zinc-800 whitespace-pre-wrap">{collectMsg}</pre>}
+          <p className="mt-2 text-xs text-zinc-400">Vercel 무료 Cron: <code>vercel.json:1</code> `0 0 * * *` (09:00 KST) → <code>/api/cron/collect?limit=5</code>. 무료 플랜은 월 1회 제한일 수 있어 수동 버튼이 메인.</p>
         </div>
 
         <div className="mt-6 rounded-2xl bg-white p-6 dark:bg-zinc-900">
