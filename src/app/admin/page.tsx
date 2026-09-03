@@ -52,6 +52,24 @@ function AddSourceBox(){
     </div>
   );
 }
+function MigrateBox(){
+  const [loading,setLoading]=useState(false); const [msg,setMsg]=useState<string|null>(null);
+  return (
+    <div className="mt-2">
+      <button disabled={loading} onClick={async()=>{
+        setLoading(true); setMsg(null);
+        try{
+          const r=await fetch("/api/admin/migrate",{method:"POST"});
+          const d=await r.json();
+          if(!r.ok) setMsg("실패: "+(d.error||JSON.stringify(d))+"\n힌트: "+(d.hint||""));
+          else setMsg("성공: "+ (d.results||[]).map((x:any)=>`${x.file}:${x.ok?"OK":"FAIL"}`).join(", "));
+        }catch(e:any){ setMsg("에러: "+e.message)} finally{ setLoading(false)}
+      }} className="rounded-full bg-yellow-400 px-4 py-2 text-xs font-bold text-black disabled:opacity-50">{loading?"실행 중...":"원클릭 마이그레이션 실행 (SUPABASE_DB_URL 필요)"}</button>
+      {msg && <pre className="mt-2 overflow-auto rounded-xl bg-zinc-100 p-2 text-xs whitespace-pre-wrap dark:bg-zinc-800">{msg}</pre>}
+      <p className="mt-1 text-xs text-zinc-400">ENV <code>SUPABASE_DB_URL</code> 넣고 Vercel Redeploy 후 버튼 클릭하면 3개 SQL이 자동 실행된다. 없으면 수동 복붙.</p>
+    </div>
+  );
+}
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
@@ -161,16 +179,16 @@ function AddSourceBox(){
         </div>
 
         <div className="mt-6 rounded-2xl border border-dashed p-5 text-sm">
-          <h3 className="font-bold">Supabase 추가 설정 (클릭 추적)</h3>
-          <p className="mt-1 text-xs text-zinc-500">SQL Editor에 <code>supabase_clicks.sql</code> 붙여넣기 → Run 하면 클릭 집계 시작. 안 해도 글쓰기는 되지만 통계가 안 뜬다.</p>
-          <h3 className="mt-4 font-bold">Supabase 설정 (1분)</h3>
+          <h3 className="font-bold">🚀 자동 마이그레이션 (SQL 복붙 없이)</h3>
+          <MigrateBox />
+          <h3 className="mt-4 font-bold">수동 마이그레이션 (대체)</h3>
           <ol className="mt-2 list-decimal pl-5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-            <li>SQL Editor에 <code>supabase.sql</code> → Run (이미 했으면 스킵)</li>
-            <li>SQL Editor에 <code>supabase_clicks.sql</code> → Run</li>
-            <li>Vercel Settings → Environment Variables에 키 2개 넣고 Redeploy</li>
+            <li>Supabase → SQL Editor에 <code>supabase.sql</code> → Run</li>
+            <li>→ <code>supabase_clicks.sql</code> → Run</li>
+            <li>→ <code>supabase_app_reviews.sql</code> → Run</li>
           </ol>
-          <pre className="mt-2 overflow-auto rounded bg-zinc-900 p-3 text-xs text-green-400">{`-- supabase_clicks.sql
-create table clicks (...)`}</pre>
+          <pre className="mt-2 overflow-auto rounded bg-zinc-900 p-3 text-xs text-green-400">{`-- 수동: 3개 파일 순서대로
+-- 자동: SUPABASE_DB_URL 넣고 위 버튼 클릭`}</pre>
         </div>
       </main>
     </div>
